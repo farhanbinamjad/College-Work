@@ -1,0 +1,46 @@
+;;  ------------------------------------------------------------------------
+;; |   FILE           :  utilities.rkt                                      |
+;; |   AUTHOR         :  Emory White                                        |
+;; |   CREATION DATE  :  2019/04/20                                         |
+;; |   DESCRIPTION    :  Utility functions for Boom language interpreter.   |
+;;  ------------------------------------------------------------------------
+
+#lang racket
+
+(provide (all-defined-out))
+
+;; -------------------------------------------------------------------------
+;; general utilities
+;; -------------------------------------------------------------------------
+
+(define list-of?
+  (lambda (num)
+    (lambda (lst)
+      (and (list? lst)
+           (= num (length lst))))))
+
+;; -------------------------------------------------------------------------
+;; environment adt
+;; -------------------------------------------------------------------------
+
+(define make-bindings
+  (lambda ()
+    '()))
+
+(define bind
+  (lambda (var val existing-bindings)
+    (cons (cons var val) existing-bindings)))
+
+(define look-up
+  (lambda (var existing-bindings)
+    (if (assoc var existing-bindings)
+        (cdr (assoc var existing-bindings))
+        (error 'look-up "undefined variable -- ~a" var))))
+
+(define var-exists?
+  (lambda (var existing-bindings)
+    (if (empty? existing-bindings)
+        #f
+        (if (eq? var (car (first existing-bindings)))
+            #t
+            (var-exists? var (rest existing-bindings))))))

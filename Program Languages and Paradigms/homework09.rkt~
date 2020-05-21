@@ -1,0 +1,26 @@
+;;  ------------------------------------------------------------------------
+;; |   FILE           :  homework09.rkt                                     |
+;; |   AUTHOR         :  FARHAN AMJAD                                       |
+;; |   CREATION DATE  :  2020/04/08                                         |
+;; |   DESCRIPTION    :                                                     |
+;; |                                                                        |
+;; |                                                                        |
+;;  ------------------------------------------------------------------------
+
+
+#lang racket
+(require "syntax-procs.rkt")
+(require "set-adt.rkt")
+
+;; --------------------------------------------------------------------------
+;; Problem 1
+;; --------------------------------------------------------------------------
+
+
+Problem 1 asks for a structurally recursive function, as a way
+to begin familiarizing ourselves with Racket vectors. It is pretty
+straightforward. Problems 2-5 ask you to implement a new list ADT
+that compresses data. Problems 2-3 are straightforward. So is Problem
+5 -- after you've solved Problem 4, which is the biggest challenge on the assignment.
+complexity comes mostly from the fact that there are four cases to consider.
+Think about them one by one, and use examples to help you design your code. Ask any questions you have!

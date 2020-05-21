@@ -1,0 +1,111 @@
+;;  ------------------------------------------------------------------------
+;; |   FILE           :  tests.rkt                                          |
+;; |   AUTHOR         :  Emory White                                        |
+;; |   CREATION DATE  :  2019/04/15                                         |
+;; |   DESCRIPTION    :  Tests for Boom language syntax procedures,         |
+;; |                     interpreter, and utilities.                        |
+;;  ------------------------------------------------------------------------
+
+#lang racket
+(require rackunit)
+(require "syntax-procs.rkt")
+(require "interpreter.rkt")
+(require "utilities.rkt")
+
+;;  ------------------------------------------------------------------------
+;; |                        syntax procedures tests                         |
+;;  ------------------------------------------------------------------------
+
+;; -------------------------------------------------------------------------
+;; boom type predicates
+;; -------------------------------------------------------------------------
+
+;; numbers
+(check-equal? (boom-exp? '16) #t)
+(check-equal? (boom-exp? '-16) #t)
+(check-equal? (boom-exp? '16.34) #t)
+(check-equal? (boom-exp? '-16.34) #t)
+
+;; varrefs
+(check-equal? (boom-exp? 'z) #t)
+(check-equal? (boom-exp? 'foo) #t)
+
+;; unary operations
+(check-equal? (boom-exp? '(- 5)) #t)
+(check-equal? (boom-exp? '(sq 16)) #t)
+
+;; binary-operations
+(check-equal? (boom-exp? '(1 + 1.5)) #t)
+(check-equal? (boom-exp? '(1 - 1.5)) #t)
+(check-equal? (boom-exp? '(1 + 1.5)) #t)
+(check-equal? (boom-exp? '(1 * 1.5)) #t)
+(check-equal? (boom-exp? '(1 / 1.5)) #t)
+(check-equal? (boom-exp? '(1 % 1.5)) #t)
+(check-equal? (boom-exp? '(1 @ 1.5)) #t)
+
+;; number-in expressions
+(check-equal? (boom-exp? '(number x = (a @ b) in (- x))) #t)
+(check-equal? (boom-exp? '(number x = (- x) in
+                            (number foo = (x - 1) in (foo / -4)))) #t)
+
+;; nested expressions
+(check-equal? (boom-exp? '(- (1 + 1.5))) #t)
+(check-equal? (boom-exp? '(sq (1 + 1.5))) #t)
+(check-equal? (boom-exp? '((sq 16) + (1 + 1.5))) #t)
+
+;; -------------------------------------------------------------------------
+;; constructors
+;; -------------------------------------------------------------------------
+
+(check-equal? (boom-number '5) '5)
+(check-equal? (unary-op '- '5) '(- 5))
+(check-equal? (unary-op 'sq '(2 + 2)) '(sq (2 + 2)))
+(check-equal? (binary-op '2 '- '5) '(2 - 5))
+(check-equal? (binary-op '(- 2) '- '5) '((- 2) - 5))
+
+;; -------------------------------------------------------------------------
+;; accessors
+;; -------------------------------------------------------------------------
+(check-equal? (unary-op->arg '(sq (- 36))) '(- 36))
+(check-equal? (unary-op->op '(sq (- 36))) 'sq)
+(check-equal? (binary-op->op '((2 + 2) % (sq 36))) '%)
+(check-equal? (binary-op->left '((2 + 2) % (sq 36))) '(2 + 2))
+(check-equal? (binary-op->right '((2 + 2) % (sq 36))) '(sq 36))
+
+;;  ------------------------------------------------------------------------
+;; |                          interpreter tests                             |
+;;  ------------------------------------------------------------------------
+
+;; -------------------------------------------------------------------------
+;; preprocess
+;; -------------------------------------------------------------------------
+(check-equal? (preprocess '(sq 6))
+              '(6 * 6))
+(check-equal? (preprocess '(4 @ 10))
+              '((4 + 10) / 2))
+(check-equal? (preprocess '(sq (4 @ 10)))
+              '(((4 + 10) / 2) * ((4 + 10) / 2)))
+(check-equal? (preprocess '((- 1) + (2 @ 2)))
+              '((- 1 ) + ((2 + 2) / 2)))
+(check-equal? (preprocess '(38 @ ((2 + 2) % (sq 36))))
+              '((38 + ((2 + 2) % (36 * 36))) / 2))
+
+;; -------------------------------------------------------------------------
+;; eval-exp
+;; -------------------------------------------------------------------------
+(check-equal? (eval-exp '(- 5)) -5)
+(check-equal? (eval-exp '(- (- (- 5)))) -5)
+(check-equal? (eval-exp '(sq 5)) 25)
+(check-equal? (eval-exp '(5 - 5)) 0)
+(check-equal? (eval-exp '(5 + 5)) 10)
+(check-equal? (eval-exp '(10 / 3)) 3)
+(check-equal? (eval-exp '(10 % 3)) 1)
+(check-equal? (eval-exp '(10 @ 2)) 6)
+(check-equal? (eval-exp '((((30 - (sq (((- 5) + (3 @ 9)) * 5))) @ 101) / 2) % 3))  2)
+
+;;  -------------------------------------------------------------------------
+;; |                         environment adt tests                           |
+;;  -------------------------------------------------------------------------
+
+(check-equal? (bind 'foo 1 (bind 'bar 2 (make-bindings)))
+              '((foo . 1) (bar . 2)))

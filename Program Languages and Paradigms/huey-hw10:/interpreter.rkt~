@@ -1,0 +1,118 @@
+;;  ------------------------------------------------------------------------
+;; |   FILE           :  interpreter.rkt                                    |
+;; |   AUTHOR         :  Emory White                                        |
+;; |   CREATION DATE  :  2019/04/15                                         |
+;; |   DESCRIPTION    :  Intepreter for Boom language consisting of a       |
+;; |                     preprocessor and an evaluator.                     |
+;;  ------------------------------------------------------------------------
+
+#lang racket
+(require "syntax-procs.rkt")
+(require "utilities.rkt")
+(provide (all-defined-out))
+
+;;  ------------------------------------------------------------------------
+;;   This code works with the following grammar:
+;;
+;;                       --------------------------- CORE FEATURES
+;;        <exp>      ::= <number>
+;;                     | ( <unary-op> <exp> )
+;;                     | ( <exp> <binary-op> <exp> )
+;;
+;;   <unary-op>      ::= - | sq
+;;  <binary-op>      ::= + | - | * | / | % | @
+;;  ------------------------------------------------------------------------
+
+;; -------------------------------------------------------------------------
+;; preprocess :: full-exp -> core-exp
+;; -------------------------------------------------------------------------
+
+(define preprocess
+  (lambda (sugared-exp)
+    (cond ((boom-number? sugared-exp) sugared-exp)
+          ((varref? sugared-exp) sugared-exp)
+          ((unary-op? sugared-exp)
+           (if (eq? (unary-op->op sugared-exp) 'sq)
+               (binary-op (preprocess (unary-op->arg sugared-exp))
+                          '*
+                          (preprocess (unary-op->arg sugared-exp)))
+               (unary-op  (unary-op->op sugared-exp)
+                          (preprocess (unary-op->arg sugared-exp)))))
+          ((binary-op? sugared-exp)
+           (if (eq? (binary-op->op sugared-exp) '@)
+               (binary-op (binary-op (preprocess (binary-op->left sugared-exp))
+                                     '+
+                                     (preprocess (binary-op->right sugared-exp)))
+                          '/
+                          '2)
+               (binary-op (preprocess (binary-op->left sugared-exp))
+                          (binary-op->op sugared-exp)
+                          (preprocess (binary-op->right sugared-exp)))))
+          ((num-in-exp? sugared-exp)
+           (num-in-exp (num-in->var sugared-exp)
+                       (preprocess (num-in->val sugared-exp))
+                       (preprocess (num-in->body sugared-exp))))
+          (else (error 'preprocess "illegal expression -- ~a" sugared-exp)))))
+
+;; -------------------------------------------------------------------------
+;; initial environment
+;; -------------------------------------------------------------------------
+
+(define *initial-env*
+  (bind 'zero 0 (bind 'two 2 (bind 'ten 10 (make-bindings)))))
+
+;; -------------------------------------------------------------------------
+;; evaluator
+;; -------------------------------------------------------------------------
+
+(define eval-exp
+  (lambda (exp)
+    (if (boom-exp? exp)
+        (eval-exp-core (preprocess exp) *initial-env*)
+        (error 'eval-exp "illegal expression -- ~a" exp))))
+
+(define eval-exp-core
+  (lambda (exp env)
+    (cond ((boom-number? exp) exp)
+          ((varref? exp)
+           (if (var-exists? exp env)
+               (look-up exp env)
+               (error 'eval-exp-core/varref "variable not bound -- ~a" exp)))
+          ((unary-op? exp)
+           (- (eval-exp-core (unary-op->arg exp) env)))
+          ((binary-op? exp)
+           (cond ((eq? (binary-op->op exp) '+)
+                  (+ (eval-exp-core (binary-op->left exp)  env)
+                     (eval-exp-core (binary-op->right exp) env)))
+                 ((eq? (binary-op->op exp) '-)
+                  (- (eval-exp-core (binary-op->left exp)  env)
+                     (eval-exp-core (binary-op->right exp) env)))
+                 ((eq? (binary-op->op exp) '*)
+                  (* (eval-exp-core (binary-op->left exp)  env)
+                     (eval-exp-core (binary-op->right exp) env)))
+                 ((eq? (binary-op->op exp) '/)
+                  (quotient (eval-exp-core (binary-op->left exp)  env)
+                            (eval-exp-core (binary-op->right exp) env)))
+                 ((eq? (binary-op->op exp) '%)
+                  (remainder (eval-exp-core (binary-op->left exp) env)
+                             (eval-exp-core (binary-op->right exp) env)))))
+          ((num-in-exp? exp)
+           (eval-exp-core (num-in->body exp)
+                          (bind (num-in->var exp) (eval-exp-core (num-in->val exp) env) env)))
+          (else (error 'eval-exp-core "illegal expression -- ~a" exp)))))
+
+;; -------------------------------------------------------------------------
+;; repl
+;; -------------------------------------------------------------------------
+
+(define run-boom
+  (lambda()
+    (display "Enter a Boom expression to evaluate: ")
+    (let ((exp (read)))
+      (if (boom-exp? exp)
+          (eval-exp exp)
+          (display "Illegal Boom expression.")))
+    (newline)
+    (run-boom)))
+
+  ;; -------------------------------------------------------------------------

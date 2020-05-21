@@ -1,0 +1,137 @@
+;;  ------------------------------------------------------------------------
+;; |   FILE           :  syntax-procs.rkt                                   |
+;; |   AUTHOR         :  Emory White                                        |
+;; |   CREATION DATE  :  2019/04/14                                         |
+;; |   DESCRIPTION    :  Syntax procedure functions for Boom language       |
+;; |                     consisting only of numbers, unary operations, and  |
+;; |                     binary operations.                                 |
+;;  ------------------------------------------------------------------------
+
+#lang racket
+
+(require "utilities.rkt")
+(provide (all-defined-out))
+
+;;  ------------------------------------------------------------------------
+;;  This code works with the following grammar:
+;;
+;;        <exp>      ::= <number>
+;;                     | <varref>
+;;                     | ( <unary-op> <exp> )
+;;                     | ( <exp> <binary-op> <exp> )
+;;                     | ( number <var> = <exp> in <exp>
+;;
+;;   <unary-op>      ::= -                     core
+;;                     | sq                    abstraction
+;;
+;;  <binary-op>      ::= + | - | * | / | %     core
+;;                     | @                     abstraction
+
+;;  ------------------------------------------------------------------------
+;;  general type predicate
+
+(define boom-exp?
+  (lambda (exp)
+    (or (boom-number?   exp)
+        (varref?        exp)
+        (unary-op?      exp)
+        (binary-op?     exp)
+        (num-in-exp? exp))))
+
+;;  ------------------------------------------------------------------------
+;;  numbers
+
+(define boom-number? number?)
+
+(define boom-number identity)
+
+;;  ------------------------------------------------------------------------
+;;  varrefs
+
+(define varref? symbol?)
+
+(define varref identity)
+
+;;  ------------------------------------------------------------------------
+;;  unary operations
+
+(define unary-op?
+  (lambda (exp)
+    (and ((list-of? 2) exp)
+         (unary-operator? (first exp))
+         (boom-exp? (second exp)))))
+
+(define unary-op
+  (lambda (op exp)
+    (list op exp)))
+
+(define unary-op->op
+  (lambda (exp)
+    (first exp)))
+
+(define unary-op->arg
+  (lambda (exp)
+    (second exp)))
+
+;;  ------------------------------------------------------------------------
+;;  binary operations
+
+(define binary-op?
+  (lambda (exp)
+    (and ((list-of? 3) exp)
+         (boom-exp? (first exp))
+         (binary-operator? (second exp))
+         (boom-exp? (third exp)))))
+
+(define binary-op
+  (lambda (exp1 op exp2)
+    (list exp1 op exp2)))
+
+(define binary-op->op
+  (lambda (exp)
+    (second exp)))
+
+(define binary-op->left
+  (lambda (exp)
+    (first exp)))
+
+(define binary-op->right
+  (lambda (exp)
+    (third exp)))
+
+;;  ------------------------------------------------------------------------
+;;  number/in expressions
+
+(define num-in-exp?
+  (lambda (exp)
+    (and ((list-of? 6) exp)
+         (eq? 'number (first exp))
+         (symbol? (second exp))
+         (eq? '= (third exp))
+         (boom-exp? (fourth exp))
+         (eq? 'in (fifth exp))
+         (boom-exp? (sixth exp)))))
+
+(define num-in-exp
+  (lambda (var exp1 exp2)
+    (list 'number var '= exp1 'in exp2)))
+
+(define num-in->var second)
+(define num-in->val fourth)
+(define num-in->body sixth)
+
+;;  ------------------------------------------------------------------------
+;;  operators
+
+(define *unary-operators* '(- sq))
+(define *binary-operators* '(+ - * / % @))
+
+(define unary-operator?
+  (lambda (exp)
+    (member exp *unary-operators*)))
+
+(define binary-operator?
+  (lambda (exp)
+    (member exp *binary-operators*)))
+
+;; ----- END OF FILE -----
