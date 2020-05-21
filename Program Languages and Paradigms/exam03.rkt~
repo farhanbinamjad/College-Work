@@ -1,0 +1,95 @@
+;;
+;; FILE:     exam03.rkt
+;; AUTHOR:   Farhan Amjad
+;; DATE:     04/01/20
+;; COMMENT:  
+;; 
+;;
+
+#lang racket
+(provide prefix-of? includes-course? nlist+ max-length prefix->infix)
+
+;; --------------------------------------------------------------------------
+;; Question 1
+;; --------------------------------------------------------------------------
+
+
+        
+
+;; --------------------------------------------------------------------------
+;; Question 2
+;; --------------------------------------------------------------------------
+
+
+    
+;; --------------------------------------------------------------------------
+;; Question 3
+;; --------------------------------------------------------------------------
+
+
+
+;; --------------------------------------------------------------------------
+;; Question 4
+;; --------------------------------------------------------------------------
+
+
+
+;; --------------------------------------------------------------------------
+;; Question 5
+;; --------------------------------------------------------------------------
+
+
+;; --------------------------------------------------------------------------
+;;  general type predicate for expressions
+;; --------------------------------------------------------------------------
+
+(define exp?
+  (lambda (exp)
+    (or (varref?  exp)
+        (lambda?  exp)
+        (app?     exp)
+        (if?      exp)
+        (with-do? exp))))      ; * new case *
+
+;; --------------------------------------------------------------------------
+;;  syntax procedures for the with-do expression   * all new *
+;; --------------------------------------------------------------------------
+
+
+(define with-do?
+  (lambda (exp)
+    (and ((list-of? 6) exp)
+         (eq? 'with (first  exp))
+         (symbol?   (second exp))
+         (eq? '=    (third  exp))
+         (exp?      (fourth exp))
+         (eq? 'do   (fifth  exp))
+         (exp?      (sixth  exp)))))
+
+(define with-do->var  second)
+(define with-do->val  fourth)
+(define with-do->body sixth )
+
+(define make-with-do
+  (lambda (var val body)
+    (list 'with var '= val 'do body)))
+
+;; --------------------------------------------------------------------------
+;;  occurs-bound? :: symbol core-exp -> boolean
+;; --------------------------------------------------------------------------
+
+(define occurs-bound?
+  (lambda (s exp)
+    (cond ((varref? exp) #f)
+          ((lambda? exp) (or (occurs-bound? s (lambda->body exp))
+                             (and (member s (lambda->params exp))
+                                  (occurs-free? s (lambda->body exp)))))
+          ((app? exp)    (or (occurs-bound? s (app->proc exp))
+                             (ormap (lambda (arg)
+                                      (occurs-bound? s arg))
+                                    (app->args exp))))
+          ((if? exp)     (or (occurs-bound? s (if->test exp))
+                             (occurs-bound? s (if->then exp))
+                             (occurs-bound? s (if->else exp))))
+          (else (error 'occurs-bound? "invalid exp ~a" exp)))))
+;; --------------------------------------------------------------------------

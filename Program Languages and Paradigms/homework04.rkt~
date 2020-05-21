@@ -1,0 +1,60 @@
+;;
+;; FILE:     homework04.rkt
+;; AUTHOR:   YOUR NAME
+;; DATE:     YOUR DATE
+;; COMMENT:  This module defines the five functions specified in
+;;           Homework 4 as an importable module.
+;;
+;; MODIFIED: 
+;; CHANGE:   
+;;
+
+#lang racket
+(require rackunit)      ; enables you to use rackunit tests
+(provide take           ; exports your functions to client code
+         reject         ;      You must define a function with
+         interleave     ;      each name, even if the function
+         every?         ;      only returns a default value!
+         positions-of)
+
+;; --------------------------------------------------------------------------
+;; Problem 1                                              (counted recursion)
+;; --------------------------------------------------------------------------
+
+'YOUR-CODE-HERE
+
+'YOUR-TESTS-HERE
+
+;; --------------------------------------------------------------------------
+;; Problem 2                                           (structural recursion)
+;; --------------------------------------------------------------------------
+
+'YOUR-CODE-HERE
+
+'YOUR-TESTS-HERE
+
+;; --------------------------------------------------------------------------
+;; Problem 3                                           (structural recursion)
+;; --------------------------------------------------------------------------
+
+'YOUR-CODE-HERE
+
+'YOUR-TESTS-HERE
+
+;; --------------------------------------------------------------------------
+;; Problem 4                                           (structural recursion)
+;; --------------------------------------------------------------------------
+
+'YOUR-CODE-HERE
+
+'YOUR-TESTS-HERE
+
+;; --------------------------------------------------------------------------
+;; Problem 5                   (structural recursion and interface procedure)
+;; --------------------------------------------------------------------------
+
+'YOUR-CODE-HERE
+
+'YOUR-TESTS-HERE
+
+;; --------------------------------------------------------------------------

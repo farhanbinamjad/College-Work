@@ -1,0 +1,26 @@
+NAME   Amjad
+ITEM   Exam 3
+SCORE  44/60
+
+1   7  =  1 + 0 + 3 + 3
+
+
+2   9  =  5 + 4
+
+    "In this snippet, what values are to be assumed one takes from the user?"
+    The function has the variable as its parameter, and we pass it the value
+    we want to assign to the variable.
+
+3   6
+    all you need is rest to drop the or from the front of a list
+    arglist->if receives either a list of length 1 or a longer list
+
+4   12
+
+
+5   10
+    no cons on value
+
+misc
+
+
