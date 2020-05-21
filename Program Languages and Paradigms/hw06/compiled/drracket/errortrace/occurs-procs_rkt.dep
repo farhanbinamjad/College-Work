@@ -1,0 +1,1 @@
+("7.6" racket ("582522c8cef836575290b853ca0da75b5161b4d9" . "25a6094573ef9d3dc6676c28f3900ab67fc10513") #"/Users/farhan/Desktop/PLP/hw06/syntax-procs.rkt" (collects #"errortrace" #"errortrace-key.rkt") (collects #"racket" #"main.rkt") (collects #"racket" #"runtime-config.rkt") (collects #"rackunit" #"main.rkt"))

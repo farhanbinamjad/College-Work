@@ -1,0 +1,120 @@
+#lang racket
+
+(require "syntax-procs.rkt")
+(provide preprocess eval-exp)
+
+;; --------------------------------------------------------------------------
+;; This function preprocesses programs written in the full Huey language
+;; to core Huey features.
+;; --------------------------------------------------------------------------
+
+(define preprocess
+  (lambda (exp)
+    (cond ((rgb? exp) exp)
+          ((unary-exp? exp)
+              (preprocess-unary (unary->op exp)
+                                (preprocess (unary->arg exp))))
+          ((2color-exp? exp)
+              (preprocess-2color (2color->op exp)
+                                 (preprocess (2color->left exp))
+                                 (preprocess (2color->right exp))))
+          ((1color-exp? exp)
+              (preprocess-1color (1color->op exp)
+                                 (preprocess (1color->left exp))
+                                 (preprocess (1color->right exp))))
+          (else
+             (error 'preprocess "invalid argument ~a" exp)))))
+
+; these helper functions receive *preprocessed* args
+
+(define preprocess-unary
+  (lambda (op color)
+    (cond ((unary-op-core? op)
+             (unary-exp op color))
+          ((eq? op 'darker)
+             (1color-exp '* color 0.5))
+          (else
+             (error 'preprocess-unary "illegal args ~a ~a" op color)))))
+
+(define preprocess-2color
+  (lambda (op left right)
+    (cond ((2color-op-core? op)
+             (2color-exp op left right))
+          ((eq? op 'mix)
+             (2color-exp '+
+                         (1color-exp '* left 0.5)
+                         (1color-exp '* right 0.5)))
+          (else
+             (error preprocess-2color "illegal args ~a ~a" op left right)))))
+
+(define preprocess-1color
+  (lambda (op color number)
+    (1color-exp op color number)))
+
+;; --------------------------------------------------------------------------
+;; This function preprocesses and evaluates programs written in the full
+;; Huey language.  If its argument is not a valid exp, it signals an error.
+;; --------------------------------------------------------------------------
+
+(define eval-exp
+  (lambda (exp)
+    (if (color? exp)
+        (eval-core (preprocess exp))
+        (error 'huey "illegal expression -- ~a" exp))))
+
+(define eval-core
+  (lambda (exp)
+    (cond ((rgb? exp) exp)
+          ((unary-exp? exp)
+              (eval-unary (unary->op exp)
+                          (eval-core (unary->arg exp))))
+          ((2color-exp? exp)
+              (eval-2color (2color->op exp)
+                           (eval-core (2color->left exp))
+                           (eval-core (2color->right exp))))
+          ((1color-exp? exp)
+              (eval-1color (1color->op exp)
+                           (eval-core (1color->left exp))
+                           (1color->right exp)))
+          (else
+             (error 'eval-core "unreachable ~a" exp)))))
+
+; these helper functions receive *evaluated* arguments
+
+(define eval-unary
+  (lambda (op color)
+    (cond ((eq? op 'invert)
+              (rgb (- 255 (r color))
+                   (- 255 (g color))
+                   (- 255 (b color))))
+          (else
+             (error 'eval-unary "unreachable -- bad op ~a" op)))))
+
+(define eval-2color
+  (lambda (op left right)
+    (cond ((eq? op '+)
+              (rgb (+ (r left) (r right))
+                   (+ (g left) (g right))
+                   (+ (b left) (b right))))
+          ((eq? op '-)
+              (rgb (- (r left) (r right))
+                   (- (g left) (g right))
+                   (- (b left) (b right))))
+          (else
+             (error 'eval-2color "unreachable -- bad op ~a" op)))))
+
+(define eval-1color
+  (lambda (op color number)
+    (cond ((eq? op '*)
+              (rgb (* (r color) number)
+                   (* (g color) number)
+                   (* (b color) number)))
+          ((eq? op 'shift)
+              (rgb (+ (r color) number)
+                   (+ (g color) number)
+                   (+ (b color) number)))
+          (else
+             (error 'eval-2color "unreachable -- bad op ~a" op)))))
+
+;; --------------------------------------------------------------------------
+

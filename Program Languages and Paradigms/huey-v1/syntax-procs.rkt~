@@ -1,0 +1,165 @@
+#lang racket
+
+(require "utilities.rkt")
+(provide (all-defined-out))     ; should *not* provide helpers
+
+;; ------------------------------------------------------------------------
+;; This code works with the HW 9 version of the Huey grammar:
+;;
+;;           <color> ::= (rgb <byte> <byte> <byte> )
+;;                     | ( <unary-op> <color> )
+;;                     | ( <color> <2color-op> <color> )
+;;                     | ( <color> <1color-op> <number> )
+;;
+;;        <unary-op> ::= invert | darker
+;;       <2color-op> ::= + | - | mix
+;;       <1color-op> ::= * | shift
+;;
+;; The operations in Huey are adapted from
+;;     http://vanseodesign.com/css/sass-colors-part-1/
+;; which describes how colors are processed in SASS.
+;; ------------------------------------------------------------------------
+
+;; ------------------------------------------------------------------------
+;; operators
+;; ------------------------------------------------------------------------
+
+(define *unary-ops-core*   '(invert))
+(define *unary-ops-sugar*  '(darker))
+(define *2color-ops-core*  '(+ -))
+(define *2color-ops-sugar* '(mix))
+(define *1color-ops-core*  '(* shift))
+(define *1color-ops-sugar* '())
+
+(define unary-op?
+  (lambda (x)
+    (and (symbol? x)
+         (or (member? x *unary-ops-core*)
+             (member? x *unary-ops-sugar*)))))
+
+(define unary-op-core?
+  (lambda (x)
+    (and (symbol? x)
+         (member? x *unary-ops-core*))))
+
+(define 2color-op?
+  (lambda (x)
+    (and (symbol? x)
+         (or (member? x *2color-ops-core*)
+             (member? x *2color-ops-sugar*)))))
+
+(define 2color-op-core?
+  (lambda (x)
+    (and (symbol? x)
+         (member? x *2color-ops-core*))))
+
+(define 1color-op?
+  (lambda (x)
+    (and (symbol? x)
+         (or (member? x *1color-ops-core*)
+             (member? x *1color-ops-sugar*)))))
+
+(define 1color-op-core?
+  (lambda (x)
+    (and (symbol? x)
+         (member? x *1color-ops-core*))))
+
+;; ------------------------------------------------------------------------
+;; general type predicate
+;; ------------------------------------------------------------------------
+
+(define color?
+  (lambda (x)
+    (or (rgb? x)
+        (unary-exp? x)
+        (2color-exp? x)
+        (1color-exp? x))))
+
+;; ------------------------------------------------------------------------
+;; RGB values -- the base values of Huey
+;; ------------------------------------------------------------------------
+
+(define rgb?
+  (lambda (x)
+    (and ((list-of? 4) x)
+         (eq? 'rgb (first x))
+         (byte? (second x))
+         (byte? (third x))
+         (byte? (fourth x)))))
+
+(define rgb
+  (lambda args
+    (cond ((not ((list-of? 3) args))
+             (error 'rgb "requires list of size 3 ~a" args))
+          ((not ((list-of? number?) args))
+             (error 'rgb "requires list of number? ~a" args))
+          (else
+             (cons 'rgb (map coerce-byte args))))))
+
+(define r second)
+(define g third)
+(define b fourth)
+
+(define coerce-byte
+  (lambda (n)
+    (cond ((> n 255) 255)
+          ((< n 0)     0)
+          (else (inexact->exact (truncate n))))))
+
+;; ------------------------------------------------------------------------
+;; unary expressions
+;; ------------------------------------------------------------------------
+
+(define unary-exp?
+  (lambda (x)
+    (and ((list-of? 2) x)
+         (unary-op? (first x))
+         (color?    (second x)))))
+
+(define unary-exp
+  (lambda (op color)
+    (list op color)))
+
+(define unary->op  first)
+(define unary->arg second)
+
+;; ------------------------------------------------------------------------
+;; 2-color expressions
+;; ------------------------------------------------------------------------
+
+(define 2color-exp?
+  (lambda (x)
+    (and ((list-of? 3) x)
+         (color?     (first x))
+         (2color-op? (second x))
+         (color?     (third x)))))
+
+(define 2color-exp
+  (lambda (op color1 color2)
+    (list color1 op color2)))
+
+(define 2color->op    second)
+(define 2color->left  first)
+(define 2color->right third)
+
+;; ------------------------------------------------------------------------
+;; 1-color expressions
+;; ------------------------------------------------------------------------
+
+(define 1color-exp?
+  (lambda (x)
+    (and ((list-of? 3) x)
+         (color?     (first x))
+         (1color-op? (second x))
+         (number?    (third x)))))
+
+(define 1color-exp
+  (lambda (op color number)
+    (list color op number)))
+
+(define 1color->op    second)
+(define 1color->left  first)
+(define 1color->right third)
+
+;; ------------------------------------------------------------------------
+
