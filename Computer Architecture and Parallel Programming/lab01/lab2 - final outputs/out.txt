@@ -1,0 +1,9 @@
+Script started on Sat 07 Sep 2019 07:56:17 PM CDT
+]0;farhan@jalad: ~/lab2[01;32mfarhan@jalad[00m:[01;34m~/lab2[00m$ ./rectangle
+Enter the length of a rectangle: 23
+Enter the width of a rectangle: 34
+A rectangle with a length of 23.00 and a width of 34.00 has an area of 782.00
+and a circumference of %3.2.
+]0;farhan@jalad: ~/lab2[01;32mfarhan@jalad[00m:[01;34m~/lab2[00m$ exit
+
+Script done on Sat 07 Sep 2019 07:56:33 PM CDT
